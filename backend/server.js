@@ -13,7 +13,7 @@ app.use(express.json({ limit: "30mb" }));
 
 const ALLOWED_IMAGE_MODELS = ["gemini-3-pro-image", "gemini-3.1-flash-image"];
 const ALLOWED_VIDEO_MODELS = ["veo-3.1-generate-preview", "gemini-omni-1.1-flash"];
-const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // ~20MB
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
 function authHeaders() {
   return {
@@ -58,19 +58,22 @@ function videoFromInteraction(j) {
 }
 
 function mapGoogleError(status, body) {
-  const msg = body?.error?.message || (typeof body?.error === "string" ? body.error : "") || "";
+  const msg =
+    body?.error?.message ||
+    (typeof body?.error === "string" ? body.error : "") ||
+    "";
   if (status === 400) {
     if (/API key|api_key|invalid|INVALID_ARGUMENT/i.test(msg))
       return "مفتاح API غير صالح أو منتهي. تحقق من GEMINI_API_KEY في Render.";
     if (/model|not found|unsupported|NOT_FOUND/i.test(msg))
       return "النموذج غير متاح أو غير مدعوم لهذا الحساب.";
     if (/image|size|too large|payload|RESOURCE_EXHAUSTED/i.test(msg))
-      return "الصورة كبيرة جدًا أو صيغتها غير مدعومة. جرّب صورة أصغر (أقل من 10MB).";
+      return "الصورة كبيرة جدًا أو صيغتها غير مدعومة. جرّب صورة أصغر.";
   }
   if (status === 401 || status === 403)
     return "مفتاح API غير مصرح به أو غير صالح.";
   if (status === 429)
-    return "تم تجاوز حد الطلبات (Rate Limit). انتظر قليلًا ثم أعد المحاولة.";
+    return "تم تجاوز حد الطلبات. انتظر قليلًا ثم أعد المحاولة.";
   if (status === 503 || status === 500)
     return "خدمة Google غير متاحة مؤقتًا. أعد المحاولة لاحقًا.";
   return msg || "خطأ من Google API.";
@@ -99,11 +102,11 @@ app.post("/api/generate-image", async (req, res) => {
 
   try {
     const {
-      model = "gemini-3-pro-image",
+      model = "gemini-3.1-flash-image",
       prompt,
       image,
       aspectRatio = "9:16",
-      imageSize = "2K",
+      imageSize = "1K",
     } = req.body || {};
 
     if (!image?.data) {
@@ -120,12 +123,13 @@ app.post("/api/generate-image", async (req, res) => {
     const rawB64 = stripDataUrl(image.data);
     if (estimateBase64Size(rawB64) > MAX_IMAGE_BYTES) {
       return res.status(413).json({
-        error: "الصورة كبيرة جدًا. الحد الأقصى حوالي 20MB. قلّل حجم الصورة ثم أعد المحاولة.",
+        error: "الصورة كبيرة جدًا. قلّل حجمها ثم أعد المحاولة.",
       });
     }
 
     const fashionPrompt = [
-      prompt || "Create a premium photorealistic fashion editorial image using the clothing reference.",
+      prompt ||
+        "Create a premium photorealistic fashion editorial image using the clothing reference.",
       "Use the uploaded clothing/model image as a visual reference.",
       "Preserve the clothing design, colors, patterns, material, texture and important details as accurately as possible.",
       "Create a realistic adult fashion model wearing the clothes naturally.",
@@ -166,9 +170,8 @@ app.post("/api/generate-image", async (req, res) => {
     const j = await r.json().catch(() => ({}));
 
     if (!r.ok) {
-      const friendly = mapGoogleError(r.status, j);
       return res.status(r.status).json({
-        error: friendly,
+        error: mapGoogleError(r.status, j),
         details: j?.error || j,
       });
     }
@@ -179,7 +182,8 @@ app.post("/api/generate-image", async (req, res) => {
 
     if (!img?.data) {
       return res.status(502).json({
-        error: "لم يرجع النموذج صورة. قد يكون الطلب مرفوضًا من سياسة المحتوى أو النموذج غير متاح.",
+        error:
+          "لم يرجع النموذج صورة. قد يكون الطلب مرفوضًا من سياسة المحتوى أو النموذج غير متاح.",
         details: j,
       });
     }
@@ -220,7 +224,7 @@ app.post("/api/generate-video", async (req, res) => {
     const rawB64 = stripDataUrl(image.data);
     if (estimateBase64Size(rawB64) > MAX_IMAGE_BYTES) {
       return res.status(413).json({
-        error: "الصورة كبيرة جدًا. الحد الأقصى حوالي 20MB. قلّل حجم الصورة ثم أعد المحاولة.",
+        error: "الصورة كبيرة جدًا. قلّل حجمها ثم أعد المحاولة.",
       });
     }
 
@@ -231,7 +235,6 @@ app.post("/api/generate-video", async (req, res) => {
       "Preserve the clothing design, colors, material and appearance as much as possible.",
     ].join(" ");
 
-    // ── Gemini Omni Flash (Interactions API) ──
     if (model === "gemini-omni-1.1-flash") {
       const body = {
         model,
@@ -262,9 +265,8 @@ app.post("/api/generate-video", async (req, res) => {
       const j = await r.json().catch(() => ({}));
 
       if (!r.ok) {
-        const friendly = mapGoogleError(r.status, j);
         return res.status(r.status).json({
-          error: friendly,
+          error: mapGoogleError(r.status, j),
           details: j?.error || j,
         });
       }
@@ -280,7 +282,6 @@ app.post("/api/generate-video", async (req, res) => {
       return res.json({ data, mimeType: "video/mp4" });
     }
 
-    // ── Veo 3.1 (Long-running predict) ──
     if (model === "veo-3.1-generate-preview") {
       const body = {
         instances: [
@@ -311,9 +312,8 @@ app.post("/api/generate-video", async (req, res) => {
       let op = await startRes.json().catch(() => ({}));
 
       if (!startRes.ok) {
-        const friendly = mapGoogleError(startRes.status, op);
         return res.status(startRes.status).json({
-          error: friendly,
+          error: mapGoogleError(startRes.status, op),
           details: op?.error || op,
         });
       }
@@ -321,29 +321,26 @@ app.post("/api/generate-video", async (req, res) => {
       const name = op.name;
       if (!name) {
         return res.status(502).json({
-          error: "لم يرجع Veo عملية توليد (operation name).",
+          error: "لم يرجع Veo عملية توليد.",
           details: op,
         });
       }
 
-      // Poll up to ~6 minutes (36 * 10s)
       const maxPolls = 36;
       for (let i = 0; i < maxPolls; i++) {
         await new Promise((r) => setTimeout(r, 10000));
-
         const pollRes = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/${name}`,
           { headers: { "x-goog-api-key": KEY } }
         );
         op = await pollRes.json().catch(() => ({}));
-
         if (op.done) break;
       }
 
       if (!op.done) {
         return res.status(504).json({
           error:
-            "استغرق توليد الفيديو وقتًا أطول من الحد المسموح (حوالي 6 دقائق). أعد المحاولة لاحقًا.",
+            "استغرق توليد الفيديو وقتًا أطول من الحد المسموح. أعد المحاولة لاحقًا.",
         });
       }
 
