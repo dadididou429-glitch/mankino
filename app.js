@@ -1,6 +1,7 @@
 const API_BASE = "https://mankino.onrender.com";
 
-let imageModel = "gemini-3-pro-image";
+// الافتراضي: الأسرع والأقوى توازنًا (Nano Banana 2)
+let imageModel = "gemini-3.1-flash-image";
 let videoModel = "veo-3.1-generate-preview";
 let selectedFile = null;
 let resultUrl = null;
@@ -42,9 +43,7 @@ document.querySelectorAll("[data-video-model]").forEach((b) => {
 
 function apiReady() {
   if (API_BASE.includes("YOUR-RENDER")) {
-    alert(
-      "ضع رابط Backend الخاص بك في app.js أو localStorage باسم MANKINO_API."
-    );
+    alert("ضع رابط Backend الخاص بك في app.js.");
     return false;
   }
   return true;
@@ -93,6 +92,35 @@ async function fileToDataUrl(file) {
   });
 }
 
+// ضغط الصورة قبل الإرسال لتسريع الرفع والتوليد
+async function compressImage(file, maxSide = 1280, quality = 0.85) {
+  if (!file.type.startsWith("image/")) return fileToDataUrl(file);
+  const dataUrl = await fileToDataUrl(file);
+  return await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxSide || height > maxSide) {
+        if (width > height) {
+          height = Math.round((height * maxSide) / width);
+          width = maxSide;
+        } else {
+          width = Math.round((width * maxSide) / height);
+          height = maxSide;
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 $("imageBtn").onclick = async () => {
   if (!selectedFile || !apiReady()) return;
 
@@ -101,10 +129,21 @@ $("imageBtn").onclick = async () => {
     "Create a premium photorealistic fashion editorial image using the clothing reference. Adult fashion model, natural fit, realistic fabric, studio lighting.";
 
   $("imageBtn").disabled = true;
-  status("جارٍ توليد الصورة…");
+  status("جارٍ تجهيز الصورة…");
 
   try {
-    const ref = dataUrlParts(await fileToDataUrl(selectedFile));
+    const compressed = await compressImage(selectedFile);
+    const ref = dataUrlParts(compressed);
+
+    // Pro = جودة أعلى (2K) | Flash = سرعة أعلى (1K)
+    const imageSize = imageModel === "gemini-3-pro-image" ? "2K" : "1K";
+
+    status(
+      imageModel.includes("flash")
+        ? "توليد سريع (Nano Banana 2)…"
+        : "توليد عالي الجودة (Pro)…"
+    );
+
     const res = await fetch(API_BASE + "/api/generate-image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -113,7 +152,7 @@ $("imageBtn").onclick = async () => {
         prompt,
         image: ref,
         aspectRatio: "9:16",
-        imageSize: "2K",
+        imageSize,
       }),
     });
 
@@ -125,7 +164,7 @@ $("imageBtn").onclick = async () => {
       "data:" + (j.mimeType || "image/png") + ";base64," + j.data,
       "mankino-nano-banana.png"
     );
-    status("تم توليد الصورة");
+    status("تم التوليد ✓");
   } catch (e) {
     status("حدث خطأ");
     alert(e.message);
@@ -142,10 +181,12 @@ $("videoBtn").onclick = async () => {
     "Premium fashion video. Adult fashion model wearing the clothing naturally, realistic fabric motion, elegant walk, cinematic camera movement, studio-quality lighting.";
 
   $("videoBtn").disabled = true;
-  status("جارٍ توليد الفيديو… قد يستغرق عدة دقائق");
+  status("جارٍ توليد الفيديو… قد يستغرق دقائق");
 
   try {
-    const ref = dataUrlParts(await fileToDataUrl(selectedFile));
+    const compressed = await compressImage(selectedFile, 1024, 0.8);
+    const ref = dataUrlParts(compressed);
+
     const res = await fetch(API_BASE + "/api/generate-video", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -161,12 +202,8 @@ $("videoBtn").onclick = async () => {
     const j = await res.json();
     if (!res.ok) throw new Error(j.error || "فشل توليد الفيديو");
 
-    setResult(
-      "video",
-      "data:video/mp4;base64," + j.data,
-      "mankino-video.mp4"
-    );
-    status("تم توليد الفيديو");
+    setResult("video", "data:video/mp4;base64," + j.data, "mankino-video.mp4");
+    status("تم توليد الفيديو ✓");
   } catch (e) {
     status("حدث خطأ");
     alert(e.message);
