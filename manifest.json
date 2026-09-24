@@ -1,0 +1,12 @@
+{
+  "name": "مانكينو",
+  "short_name": "مانكينو",
+  "description": "عارضات أزياء بالذكاء الاصطناعي لمتاجر الملابس",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#050b14",
+  "theme_color": "#07111f",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": []
+}
