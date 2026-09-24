@@ -1,28 +1,36 @@
-# مانكينو AI v3
+# Mankino AI Backend
 
-نسخة جاهزة لربط واجهة مانكينو بخوادم Google Gemini API.
+## النماذج المفعلة
 
-## ما الذي تمت إضافته؟
+- Nano Banana Pro: `gemini-3-pro-image`
+- Nano Banana 2: `gemini-3.1-flash-image`
+- Veo 3.1: `veo-3.1-generate-preview`
+- Gemini Omni Flash: `gemini-omni-1.1-flash`
 
-### الصور
-- Nano Banana Pro (`gemini-3-pro-image`)
-- Nano Banana 2 (`gemini-3.1-flash-image`)
+هذه النماذج تستخدم Google Gemini API. Nano Banana Pro مخصص للصور، بينما Veo 3.1 وGemini Omni Flash مخصصان لتوليد الفيديو.
 
-### الفيديو
-- Veo 3.1 (`veo-3.1-generate-preview`)
-- Gemini Omni Flash (`gemini-omni-1.1-flash`)
+## تشغيل محليًا
 
-الواجهة تسمح برفع صورة الملابس/الموديل، كتابة وصف، اختيار المحرك، ثم توليد صورة أو فيديو.
+1. ثبّت Node.js 20+.
+2. نفّذ `npm install`.
+3. انسخ `.env.example` إلى `.env`.
+4. ضع مفتاح Google AI Studio في `GEMINI_API_KEY`.
+5. نفّذ `npm start`.
 
-## مهم جدًا
+## Render
 
-مفتاح Google API لا يوضع في GitHub Pages. يوضع فقط كمتغير بيئة في الـBackend (Render مثلًا).
+أنشئ Web Service من نفس مستودع GitHub:
 
-## البنية
+- Root Directory: `backend`
+- Build Command: `npm install`
+- Start Command: `npm start`
+- Environment Variable:
+  - Key: `GEMINI_API_KEY`
+  - Value: مفتاحك السري
 
-- `frontend/` — يرفع إلى GitHub Pages.
-- `backend/` — ينشر كـ Render Web Service.
+لا تضع المفتاح في GitHub أو في ملفات frontend.
 
-## ملاحظة
+بعد الحصول على رابط Render، ضعه في `frontend/app.js` بدل:
+`https://YOUR-RENDER-BACKEND.onrender.com`
 
-تكلفة الاستخدام والحدود تعتمد على حساب Google/مشروع Gemini API وخطة Google الحالية.
+ثم ارفع مجلد frontend إلى GitHub Pages.

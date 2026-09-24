@@ -1,119 +1,89 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#07111f">
-  <meta name="description" content="مانكينو — عارضات أزياء بالذكاء الاصطناعي لمتاجر الملابس">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#090b18">
+  <meta name="description" content="مانكينو — توليد صور وفيديوهات أزياء بالذكاء الاصطناعي">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
-  <title>مانكينو — عارضات أزياء بالذكاء الاصطناعي</title>
+  <title>مانكينو AI</title>
 </head>
 <body>
-  <div class="app-shell">
-    <header class="topbar">
-      <button class="icon-btn" id="menuBtn" aria-label="القائمة">☰</button>
-      <div class="brand">
-        <span class="brand-mark">♟</span>
-        <span>مانكينو</span>
+  <div class="bg"></div>
+  <main class="app">
+    <header>
+      <div>
+        <div class="brand">مانكينو <span>AI</span></div>
+        <div class="sub">استوديو الأزياء بالذكاء الاصطناعي</div>
       </div>
-      <button class="icon-btn" aria-label="الحساب">♙</button>
+      <div class="status" id="status">جاهز</div>
     </header>
 
-    <main>
-      <section class="hero">
-        <div class="hero-glow"></div>
-        <h1>حوّل ملابسك إلى<br><span>صور وفيديوهات احترافية</span></h1>
-        <p>اختر صورة، اكتب فكرتك، ودع الذكاء الاصطناعي يصنع لك محتوى جاهزًا لمتجرك.</p>
-      </section>
+    <section class="hero">
+      <h1>حوّل صورة الملابس إلى<br><strong>مشهد أزياء احترافي</strong></h1>
+      <p>صورة فاخرة أو فيديو عمودي جاهز للنشر.</p>
+    </section>
 
-      <section class="quick-actions">
-        <button class="action-card video" id="videoBtn">
-          <span class="action-icon">▶</span>
-          <strong>توليد فيديو</strong>
-          <small>حوّل الصورة إلى فيديو</small>
-        </button>
-        <button class="action-card image" id="imageBtn">
-          <span class="action-icon">✦</span>
-          <strong>توليد صورة</strong>
-          <small>اصنع صورة أزياء جديدة</small>
-        </button>
-        <button class="action-card models" id="modelsBtn">
-          <span class="action-icon">♙</span>
-          <strong>عارضات الأزياء</strong>
-          <small>اختر عارضة مناسبة</small>
-        </button>
-      </section>
+    <section class="card">
+      <label class="label">1 — صورة الملابس / الموديل</label>
+      <div class="upload" id="drop">
+        <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp">
+        <div class="uploadIcon">＋</div>
+        <b id="fileName">اضغط لاختيار صورة</b>
+        <small>PNG / JPG / WEBP</small>
+      </div>
+      <img id="preview" class="preview hidden" alt="preview">
+    </section>
 
-      <section class="workspace">
-        <div class="section-title">
-          <h2>إنشاء محتوى</h2>
-          <span id="selectedStatus">لم يتم اختيار صورة</span>
-        </div>
+    <section class="card">
+      <label class="label">2 — اختر المحرك</label>
+      <div class="chips">
+        <button class="chip active" data-image-model="gemini-3-pro-image">🍌 Nano Banana Pro</button>
+        <button class="chip" data-image-model="gemini-3.1-flash-image">🍌 Nano Banana 2</button>
+      </div>
+    </section>
 
-        <label class="upload-box" for="imageInput">
-          <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp">
-          <div id="uploadEmpty">
-            <div class="upload-icon">↑</div>
-            <strong>اختر صورة الملابس</strong>
-            <span>اضغط هنا لاختيار صورة من هاتفك</span>
-            <small>JPG · PNG · WEBP</small>
-          </div>
-          <img id="preview" alt="معاينة الصورة" hidden>
-        </label>
+    <section class="card">
+      <label class="label">3 — وصف المشهد</label>
+      <textarea id="prompt" placeholder="مثال: عارضة أزياء بالغة ترتدي هذا الفستان داخل متجر أزياء فاخر، إضاءة استوديو ناعمة، مظهر واقعي، حركة طبيعية للقماش، تصوير سينمائي..."></textarea>
+    </section>
 
-        <div class="prompt-wrap">
-          <label for="prompt">وصف ما تريد</label>
-          <textarea id="prompt" maxlength="500" placeholder="مثال: عارضة أزياء ترتدي هذا الفستان داخل متجر ملابس فاخر، إضاءة طبيعية وحركة كاميرا احترافية..."></textarea>
-          <span id="counter">0/500</span>
-        </div>
+    <section class="card">
+      <label class="label">4 — الفيديو</label>
+      <div class="chips">
+        <button class="chip videoChip active" data-video-model="veo-3.1-generate-preview">🎬 Veo 3.1</button>
+        <button class="chip videoChip" data-video-model="gemini-omni-1.1-flash">⚡ Gemini Omni Flash</button>
+      </div>
+      <div class="options">
+        <select id="ratio">
+          <option value="9:16">عمودي 9:16</option>
+          <option value="16:9">أفقي 16:9</option>
+        </select>
+        <select id="resolution">
+          <option value="720p">720p</option>
+          <option value="1080p">1080p</option>
+        </select>
+      </div>
+    </section>
 
-        <div class="mode-row">
-          <button class="mode active" data-mode="image">🖼️ توليد صورة</button>
-          <button class="mode" data-mode="video">🎬 توليد فيديو</button>
-        </div>
+    <div class="actions">
+      <button id="imageBtn" class="primary">✨ توليد صورة</button>
+      <button id="videoBtn" class="secondary">🎬 توليد فيديو</button>
+    </div>
 
-        <button class="generate" id="generateBtn">
-          <span>✦</span> ابدأ التوليد
-        </button>
-        <p class="note">الواجهة جاهزة الآن. سيتم ربط التوليد بمحرك الذكاء الاصطناعي في المرحلة التالية.</p>
-      </section>
+    <section class="card resultCard hidden" id="resultCard">
+      <div class="resultHead">
+        <label class="label">النتيجة</label>
+        <button id="saveBtn" class="mini">حفظ</button>
+      </div>
+      <img id="resultImage" class="resultMedia hidden" alt="generated image">
+      <video id="resultVideo" class="resultMedia hidden" controls playsinline></video>
+      <a id="downloadBtn" class="download hidden" download>⬇ تنزيل النتيجة</a>
+    </section>
 
-      <section class="models-section">
-        <div class="section-title">
-          <h2>عارضات مقترحة</h2>
-          <button id="allModels">عرض الكل</button>
-        </div>
-        <div class="model-grid">
-          <button class="model-card" data-model="سارة">
-            <div class="model-avatar avatar1">س</div>
-            <strong>سارة</strong><small>مظهر عصري</small>
-          </button>
-          <button class="model-card" data-model="ليلى">
-            <div class="model-avatar avatar2">ل</div>
-            <strong>ليلى</strong><small>ستايل كلاسيكي</small>
-          </button>
-          <button class="model-card" data-model="دينا">
-            <div class="model-avatar avatar3">د</div>
-            <strong>دينا</strong><small>إطلالة عصرية</small>
-          </button>
-          <button class="model-card" data-model="نور">
-            <div class="model-avatar avatar4">ن</div>
-            <strong>نور</strong><small>محجبة أنيقة</small>
-          </button>
-        </div>
-      </section>
-    </main>
-
-    <nav class="bottom-nav">
-      <button class="nav-item active">⌂<span>الرئيسية</span></button>
-      <button class="nav-item" id="galleryBtn">▣<span>معرضي</span></button>
-      <button class="nav-item">♡<span>المفضلة</span></button>
-      <button class="nav-item">♙<span>حسابي</span></button>
-    </nav>
-  </div>
-
-  <div class="toast" id="toast"></div>
+    <footer>مانكينو AI • المفتاح يبقى في الخادم ولا يوضع داخل GitHub Pages</footer>
+  </main>
   <script src="app.js"></script>
 </body>
 </html>

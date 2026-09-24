@@ -1,80 +1,99 @@
-const imageInput = document.getElementById("imageInput");
-const preview = document.getElementById("preview");
-const uploadEmpty = document.getElementById("uploadEmpty");
-const selectedStatus = document.getElementById("selectedStatus");
-const prompt = document.getElementById("prompt");
-const counter = document.getElementById("counter");
-const generateBtn = document.getElementById("generateBtn");
-const toast = document.getElementById("toast");
+const API_BASE = localStorage.getItem("MANKINO_API") || "https://YOUR-RENDER-BACKEND.onrender.com";
 
-let mode = "image";
-let selectedModel = "";
+let imageModel = "gemini-3-pro-image";
+let videoModel = "veo-3.1-generate-preview";
+let selectedFile = null;
+let resultUrl = null;
 
-function showToast(message){
-  toast.textContent = message;
-  toast.classList.add("show");
-  clearTimeout(window.__toast);
-  window.__toast = setTimeout(()=>toast.classList.remove("show"), 2300);
-}
+const $ = id => document.getElementById(id);
+const status = t => $("status").textContent = t;
 
-imageInput.addEventListener("change", e => {
-  const file = e.target.files?.[0];
-  if(!file) return;
-  const url = URL.createObjectURL(file);
-  preview.src = url;
-  preview.hidden = false;
-  uploadEmpty.hidden = true;
-  selectedStatus.textContent = file.name;
-  showToast("تم اختيار الصورة");
+$("imageInput").addEventListener("change", e => {
+  selectedFile = e.target.files[0];
+  if (!selectedFile) return;
+  $("fileName").textContent = selectedFile.name;
+  const r = new FileReader();
+  r.onload = () => { $("preview").src = r.result; $("preview").classList.remove("hidden"); };
+  r.readAsDataURL(selectedFile);
 });
 
-prompt.addEventListener("input", () => {
-  counter.textContent = `${prompt.value.length}/500`;
+document.querySelectorAll("[data-image-model]").forEach(b => b.onclick = () => {
+  document.querySelectorAll("[data-image-model]").forEach(x => x.classList.remove("active"));
+  b.classList.add("active"); imageModel = b.dataset.imageModel;
+});
+document.querySelectorAll("[data-video-model]").forEach(b => b.onclick = () => {
+  document.querySelectorAll("[data-video-model]").forEach(x => x.classList.remove("active"));
+  b.classList.add("active"); videoModel = b.dataset.videoModel;
 });
 
-document.querySelectorAll(".mode").forEach(btn=>{
-  btn.addEventListener("click",()=>{
-    document.querySelectorAll(".mode").forEach(x=>x.classList.remove("active"));
-    btn.classList.add("active");
-    mode = btn.dataset.mode;
-    generateBtn.innerHTML = mode === "video" ? "<span>✦</span> ابدأ توليد الفيديو" : "<span>✦</span> ابدأ توليد الصورة";
-  });
-});
-
-document.querySelectorAll(".model-card").forEach(card=>{
-  card.addEventListener("click",()=>{
-    selectedModel = card.dataset.model;
-    document.querySelectorAll(".model-card").forEach(x=>x.style.outline="none");
-    card.style.outline = "2px solid #a855f7";
-    showToast(`تم اختيار العارضة: ${selectedModel}`);
-  });
-});
-
-document.getElementById("imageBtn").onclick = ()=>{
-  document.querySelector(".workspace").scrollIntoView({behavior:"smooth"});
-  document.querySelector('[data-mode="image"]').click();
-};
-document.getElementById("videoBtn").onclick = ()=>{
-  document.querySelector(".workspace").scrollIntoView({behavior:"smooth"});
-  document.querySelector('[data-mode="video"]').click();
-};
-document.getElementById("modelsBtn").onclick = ()=>{
-  document.querySelector(".models-section").scrollIntoView({behavior:"smooth"});
-};
-document.getElementById("allModels").onclick = ()=>{
-  document.querySelector(".models-section").scrollIntoView({behavior:"smooth"});
-};
-document.getElementById("menuBtn").onclick = ()=>showToast("القائمة ستكون متاحة في النسخة التالية");
-document.getElementById("galleryBtn").onclick = ()=>showToast("المعرض سيكون متاحًا بعد ربط التخزين");
-
-generateBtn.onclick = ()=>{
-  if(!imageInput.files?.[0]){
-    showToast("اختر صورة أولًا");
-    return;
+function apiReady() {
+  if (API_BASE.includes("YOUR-RENDER")) {
+    alert("ضع رابط Backend الخاص بك في app.js أو localStorage باسم MANKINO_API.");
+    return false;
   }
-  showToast(mode === "video" ? "جاهز لربط توليد الفيديو بمحرك الذكاء الاصطناعي" : "جاهز لربط توليد الصورة بمحرك الذكاء الاصطناعي");
+  return true;
+}
+function dataUrlParts(dataUrl) {
+  const m = dataUrl.match(/^data:(.*?);base64,(.*)$/);
+  if (!m) throw new Error("صيغة الصورة غير مدعومة");
+  return { mimeType:m[1], data:m[2] };
+}
+function setResult(kind, dataUrl, filename) {
+  $("resultCard").classList.remove("hidden");
+  $("resultImage").classList.add("hidden"); $("resultVideo").classList.add("hidden");
+  $("downloadBtn").classList.remove("hidden");
+  if (resultUrl && resultUrl.startsWith("blob:")) URL.revokeObjectURL(resultUrl);
+  if (kind === "image") {
+    $("resultImage").src = dataUrl; $("resultImage").classList.remove("hidden");
+    $("downloadBtn").href = dataUrl; $("downloadBtn").download = filename || "mankino-image.png";
+    resultUrl = dataUrl;
+  } else {
+    const bytes = Uint8Array.from(atob(dataUrl.split(",")[1]), c => c.charCodeAt(0));
+    const blob = new Blob([bytes], {type:"video/mp4"});
+    resultUrl = URL.createObjectURL(blob);
+    $("resultVideo").src = resultUrl; $("resultVideo").classList.remove("hidden");
+    $("downloadBtn").href = resultUrl; $("downloadBtn").download = filename || "mankino-video.mp4";
+  }
+}
+async function fileToDataUrl(file) {
+  return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)});
+}
+
+$("imageBtn").onclick = async () => {
+  if (!selectedFile || !apiReady()) return;
+  const prompt = $("prompt").value.trim() || "Create a premium photorealistic fashion editorial image using the clothing reference. Adult fashion model, natural fit, realistic fabric, studio lighting.";
+  $("imageBtn").disabled = true; status("جارٍ توليد الصورة…");
+  try {
+    const ref = dataUrlParts(await fileToDataUrl(selectedFile));
+    const res = await fetch(API_BASE + "/api/generate-image", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:imageModel,prompt,image:ref,aspectRatio:"9:16",imageSize:"2K"})
+    });
+    const j = await res.json(); if(!res.ok) throw new Error(j.error || "فشل توليد الصورة");
+    setResult("image","data:"+j.mimeType+";base64,"+j.data,"mankino-nano-banana.png");
+    status("تم توليد الصورة");
+  } catch(e){ status("حدث خطأ"); alert(e.message); }
+  finally{$("imageBtn").disabled=false}
 };
 
-if("serviceWorker" in navigator){
-  window.addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
-}
+$("videoBtn").onclick = async () => {
+  if (!selectedFile || !apiReady()) return;
+  const prompt = $("prompt").value.trim() || "Premium fashion video. Adult fashion model wearing the clothing naturally, realistic fabric motion, elegant walk, cinematic camera movement, studio-quality lighting.";
+  $("videoBtn").disabled = true; status("جارٍ توليد الفيديو… قد يستغرق عدة دقائق");
+  try {
+    const ref = dataUrlParts(await fileToDataUrl(selectedFile));
+    const res = await fetch(API_BASE + "/api/generate-video", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:videoModel,prompt,image:ref,aspectRatio:$("ratio").value,resolution:$("resolution").value})
+    });
+    const j = await res.json(); if(!res.ok) throw new Error(j.error || "فشل توليد الفيديو");
+    setResult("video","data:video/mp4;base64,"+j.data,"mankino-video.mp4");
+    status("تم توليد الفيديو");
+  } catch(e){ status("حدث خطأ"); alert(e.message); }
+  finally{$("videoBtn").disabled=false}
+};
+
+$("saveBtn").onclick = () => {
+  if ($("downloadBtn").classList.contains("hidden")) return;
+  $("downloadBtn").click();
+};
