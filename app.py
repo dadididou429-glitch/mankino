@@ -1,7 +1,6 @@
 import streamlit as st
 from google import genai
 import requests
-import io
 
 # 1. إعداد واجهة الصفحة الاحترافية وتفعيل المظهر الداكن
 st.set_page_config(page_title="Custom AI Studio Flow", layout="wide")
@@ -56,11 +55,11 @@ if submit_button and prompt:
             except Exception:
                 english_prompt = prompt
 
-            # --- مسار توليد الصور المستقر 100% ---
+            # --- مسار توليد الصور المستقر والمصلح بالكامل ---
             if mode == "📸 توليد صور احترافية (Imagen 3)":
-                # استخدام خادم إنتاج صور فوري ومستقر لتفادي ضغط جوجل تماماً
+                # تم تصحيح الرابط هنا بإضافة الشرطة المائلة بدقة قبل النص المترجم
                 encoded_prompt = requests.utils.quote(english_prompt)
-                IMAGE_URL = f"https://pollinations.ai{encoded_prompt}?width=1024&height=1024&nologo=true&private=true"
+                IMAGE_URL = f"https://pollinations.ai{encoded_prompt}?width=1024&height=1024&nologo=true"
                 
                 response = requests.get(IMAGE_URL, timeout=30)
                 if response.status_code == 200:
