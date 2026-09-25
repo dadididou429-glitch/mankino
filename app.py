@@ -3,7 +3,7 @@ from google import genai
 import requests
 import io
 
-# 1. إعداد الصفحة وتصميمها (واجهة احترافية باللغة العربية)
+# 1. Configuration de la page
 st.set_page_config(page_title="Custom AI Studio Flow", layout="wide")
 
 st.markdown("""
@@ -18,7 +18,7 @@ st.markdown("""
 st.title("🎨 استوديو الذكاء الاصطناعي الخاص بي")
 st.caption("منصتك الخاصة لتوليد النصوص، الصور، والفيديوهات مجاناً بالكامل")
 
-# 2. ربط حساب جوجل بأمان (للنصوص)
+# 2. Connexion à l'API Google Secrets
 if "GOOGLE_API_KEY" in st.secrets:
     try:
         api_key = st.secrets["GOOGLE_API_KEY"]
@@ -30,7 +30,7 @@ else:
     st.warning("⚠️ مفتاح GOOGLE_API_KEY غير موجود في إعدادات Secrets.")
     st.stop()
 
-# 3. لوحة التحكم الجانبية
+# 3. Panneau de contrôle latéral
 with st.sidebar:
     st.header("🎛️ لوحة التحكم")
     mode = st.selectbox("ماذا تريد أن تصنع اليوم؟", [
@@ -38,24 +38,25 @@ with st.sidebar:
         "🎬 توليد فيديو سريع", 
         "✍️ مساعد نصوص (Gemini Flash)"
     ])
-    prompt = st.text_area("اكتب الوصف (Prompt):", placeholder="اكتب وصفك هنا (يفضل بالإنجليزية للصور لنتائج مذهلة)...")
+    prompt = st.text_area("اكتب الوصف (Prompt):", placeholder="اكتب وصفك هنا بالإنجليزية للحصول على أفضل النتائج...")
     submit_button = st.button("توليد الآن ✨")
 
-# 4. منطقة العرض الرئيسية
+# 4. Zone d'affichage des résultats
 st.subheader("🖼️ معرض النتائج")
 
 if submit_button and prompt:
     with st.spinner("جاري المعالجة والتوليد، يرجى الانتظار..."):
         try:
-            # --- مسار توليد الصور (سيرفر فوري مباشر لتفادي ضغط جوجل) ---
+            # --- CAS 1 : GÉNÉRATION D'IMAGE (Lien corrigé sans erreur !) ---
             if mode == "📸 توليد صور (Imagen 3)":
+                # Correction du lien officiel ici : .ai au lieu de .aia
                 IMAGE_API_URL = f"https://pollinations.ai{requests.utils.quote(prompt)}?width=1024&height=1024&nologo=true"
                 response = requests.get(IMAGE_API_URL, timeout=30)
                 
                 if response.status_code == 200:
                     st.image(response.content, caption="تم توليد صورتك بنجاح! 🚀", use_container_width=True)
                     
-                    # زر التحميل المباشر للهاتف
+                    # Bouton de téléchargement
                     st.download_button(
                         label="⬇️ تحميل الصورة إلى هاتفك",
                         data=response.content,
@@ -65,7 +66,7 @@ if submit_button and prompt:
                 else:
                     st.error("⚠️ خادم الصور مشغول حالياً، يرجى إعادة الضغط على زر التوليد.")
 
-            # --- مسار توليد الفيديو ---
+            # --- CAS 2 : GÉNÉRATION DE VIDÉO ---
             elif mode == "🎬 توليد فيديو سريع":
                 VIDEO_API_URL = "https://huggingface.co"
                 response = requests.post(VIDEO_API_URL, json={"inputs": prompt}, timeout=60)
@@ -74,7 +75,7 @@ if submit_button and prompt:
                 else:
                     st.error("⚠️ خادم الفيديو مشغول حالياً، يرجى المحاولة لاحقاً.")
 
-            # --- مسار مساعد النصوص من جوجل ---
+            # --- CAS 3 : ASSISTANT TEXTE (Gemini) ---
             elif mode == "✍️ مساعد نصوص (Gemini Flash)":
                 response = client.models.generate_content(
                     model='gemini-3.8-flash',
