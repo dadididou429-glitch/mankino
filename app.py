@@ -3,7 +3,7 @@ from google import genai
 import requests
 import io
 
-# 1. Configuration de la page avec un style CSS personnalisé (Mode Sombre et Design Pro)
+# 1. إعداد الصفحة وتصميمها (واجهة احترافية باللغة العربية)
 st.set_page_config(page_title="Custom AI Studio Flow", layout="wide")
 
 st.markdown("""
@@ -15,76 +15,67 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🎨 AI Studio Flow Personnel")
-st.caption("Votre plateforme privée et 100% gratuite pour générer du texte, des images et des vidéos.")
+st.title("🎨 استوديو الذكاء الاصطناعي الخاص بي")
+st.caption("منصتك الخاصة لتوليد النصوص، الصور، والفيديوهات مجاناً بالكامل")
 
-# 2. Connexion sécurisée à l'API Google
+# 2. ربط حساب جوجل بأمان (للنصوص)
 if "GOOGLE_API_KEY" in st.secrets:
     try:
         api_key = st.secrets["GOOGLE_API_KEY"]
         client = genai.Client(api_key=api_key)
     except Exception as e:
-        st.error(f"❌ Erreur de configuration Google: {e}")
+        st.error(f"❌ خطأ في إعدادات جوجل: {e}")
         st.stop()
 else:
-    st.warning("⚠️ Clé GOOGLE_API_KEY manquante dans les Secrets Streamlit.")
+    st.warning("⚠️ مفتاح GOOGLE_API_KEY غير موجود في إعدادات Secrets.")
     st.stop()
 
-# 3. Panneau de contrôle latéral (Sidebar)
+# 3. لوحة التحكم الجانبية
 with st.sidebar:
-    st.header("🎛️ Panneau de Contrôle")
-    mode = st.selectbox("Que voulez-vous créer ?", [
-        "📸 Générer une Image (Imagen 3)", 
-        "🎬 Générer une Vidéo Rapide", 
-        "✍️ Assistant Texte (Gemini Flash)"
+    st.header("🎛️ لوحة التحكم")
+    mode = st.selectbox("ماذا تريد أن تصنع اليوم؟", [
+        "📸 توليد صور (Imagen 3)", 
+        "🎬 توليد فيديو سريع", 
+        "✍️ مساعد نصوص (Gemini Flash)"
     ])
-    prompt = st.text_area("Entrez votre description (Prompt) :", placeholder="Érivez ici en arabe ou en anglais...")
-    submit_button = st.button("Générer maintenant ✨")
+    prompt = st.text_area("اكتب الوصف (Prompt):", placeholder="اكتب وصفك هنا (يفضل بالإنجليزية للصور لنتائج مذهلة)...")
+    submit_button = st.button("توليد الآن ✨")
 
-# 4. Zone d'affichage des résultats
-st.subheader("🖼️ Galerie des Résultats")
+# 4. منطقة العرض الرئيسية
+st.subheader("🖼️ معرض النتائج")
 
 if submit_button and prompt:
-    with st.spinner("Traitement et génération en cours, veuillez patienter..."):
+    with st.spinner("جاري المعالجة والتوليد، يرجى الانتظار..."):
         try:
-            # Étape intermédiaire : Traduction/Optimisation automatique en anglais via Gemini pour éviter l'erreur de lien long
-            translation_response = client.models.generate_content(
-                model='gemini-3.8-flash',
-                contents=f"Translate this prompt into a clean, concise English description for image generation, without any extra text or conversational remarks: {prompt}",
-            )
-            english_prompt = translation_response.text.strip() if translation_response.text else prompt
-
-            # --- CAS 1 : GÉNÉRATION D'IMAGE ---
-            if mode == "📸 Générer une Image (Imagen 3)":
-                # Utilisation d'un endpoint optimisé et sécurisé contre les chaînes trop longues
-                IMAGE_API_URL = "https://pollinations.ai"
-                payload = {"prompt": english_prompt, "width": 1024, "height": 1024, "nologo": True}
+            # --- مسار توليد الصور (سيرفر فوري مباشر لتفادي ضغط جوجل) ---
+            if mode == "📸 توليد صور (Imagen 3)":
+                IMAGE_API_URL = f"https://pollinations.ai{requests.utils.quote(prompt)}?width=1024&height=1024&nologo=true"
+                response = requests.get(IMAGE_API_URL, timeout=30)
                 
-                response = requests.post(IMAGE_API_URL, json=payload, timeout=30)
                 if response.status_code == 200:
-                    st.image(response.content, caption="Votre image générée avec succès ! 🚀", use_container_width=True)
+                    st.image(response.content, caption="تم توليد صورتك بنجاح! 🚀", use_container_width=True)
                     
-                    # Bouton de téléchargement direct sur le téléphone
+                    # زر التحميل المباشر للهاتف
                     st.download_button(
-                        label="⬇️ Télécharger l'image sur votre appareil",
+                        label="⬇️ تحميل الصورة إلى هاتفك",
                         data=response.content,
                         file_name="ai_studio_image.jpg",
                         mime="image/jpeg"
                     )
                 else:
-                    st.error(f"⚠️ Le serveur d'images est surchargé (Code: {response.status_code}). Veuillez réessayer.")
+                    st.error("⚠️ خادم الصور مشغول حالياً، يرجى إعادة الضغط على زر التوليد.")
 
-            # --- CAS 2 : GÉNÉRATION DE VIDÉO ---
-            elif mode == "🎬 Générer une Vidéo Rapide":
+            # --- مسار توليد الفيديو ---
+            elif mode == "🎬 توليد فيديو سريع":
                 VIDEO_API_URL = "https://huggingface.co"
-                response = requests.post(VIDEO_API_URL, json={"inputs": english_prompt}, timeout=60)
+                response = requests.post(VIDEO_API_URL, json={"inputs": prompt}, timeout=60)
                 if response.status_code == 200:
                     st.video(response.content)
                 else:
-                    st.error("⚠️ Le serveur vidéo est temporairement occupé, veuillez réessayer dans un instant.")
+                    st.error("⚠️ خادم الفيديو مشغول حالياً، يرجى المحاولة لاحقاً.")
 
-            # --- CAS 3 : ASSISTANT TEXTE ---
-            elif mode == "✍️ Assistant Texte (Gemini Flash)":
+            # --- مسار مساعد النصوص من جوجل ---
+            elif mode == "✍️ مساعد نصوص (Gemini Flash)":
                 response = client.models.generate_content(
                     model='gemini-3.8-flash',
                     contents=prompt,
@@ -92,4 +83,4 @@ if submit_button and prompt:
                 st.write(response.text)
 
         except Exception as e:
-            st.error(f"❌ Une erreur est survenue : {e}")
+            st.error(f"❌ حدث خطأ أثناء التوليد: {e}")
