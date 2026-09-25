@@ -9,7 +9,7 @@ st.set_page_config(page_title="Custom AI Studio Flow", layout="wide")
 st.title("🎨 استوديو الذكاء الاصطناعي المتكامل")
 st.caption("منصتك الخاصة لتوليد النصوص، الصور، والفيديوهات مجاناً بالكامل")
 
-# قراءة مفتاح جوجل مباشرة بدون قيود على الحروف الأولى
+# قراءة مفتاح جوجل مباشرة من إعدادات Secrets
 if "GOOGLE_API_KEY" in st.secrets:
     try:
         api_key = st.secrets["GOOGLE_API_KEY"]
@@ -38,14 +38,17 @@ st.subheader("🖼️ معرض النتائج")
 if submit_button and prompt:
     with st.spinner("جاري المعالجة والتوليد، يرجى الانتظار..."):
         try:
-            # 1. مسار توليد الصور 
+            # 1. مسار توليد الصور (باستخدام الأسلوب المحدث الصحيح لمنع الخطأ الظاهر)
             if mode == "📸 توليد صور (Imagen 3)":
-                model = genai.ImageGenerationModel("imagen-3.0-generate-002")
-                result = model.generate_images(prompt=prompt, number_of_images=1)
+                result = genai.generate_images(
+                    model="imagen-3.0-generate-002",
+                    prompt=prompt,
+                    number_of_images=1
+                )
                 
-                if result and result.images:
-                    for img in result.images:
-                        st.image(img._pil_image, caption="الصورة الناتجة", use_container_width=True)
+                if result and result.generated_images:
+                    for img in result.generated_images:
+                        st.image(img.image._pil_image, caption="الصورة الناتجة", use_container_width=True)
                 else:
                     st.error("⚠️ استجابة جوجل فارغة، حاول كتابة وصف مختلف.")
 
