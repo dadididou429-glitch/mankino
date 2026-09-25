@@ -34,34 +34,30 @@ with st.sidebar:
     prompt = st.text_area("اكتب الوصف (Prompt):", placeholder="اكتب وصفاً واضحاً باللغة الإنجليزية...")
     submit_button = st.button("توليد الآن ✨")
 
-# منطقة العرض الرئيسية
+# منطقه العرض الرئيسية
 st.subheader("🖼️ معرض النتائج")
 
 if submit_button and prompt:
     with st.spinner("جاري المعالجة والتوليد، يرجى الانتظار..."):
         try:
-            # 1. مسار توليد الصور المتوافق مجاناً مع حسابات المطورين العادية
+            # 1. مسار توليد الصور المتوافق مجاناً باستخدام النموذج الأحدث مجاناً لعام 2026
             if mode == "📸 توليد صور (Imagen 3)":
-                # نطلب من جيميناي تشغيل أداة توليد الصور المدمجة المتاحة مجاناً للحسابات العادية
                 response = client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=f"Generate an image based on this description: {prompt}",
+                    model='gemini-3.8-flash',
+                    contents=f"Generate a beautiful image based on this description: {prompt}",
                 )
                 
-                # فحص ما إذا كانت الإجابة تحتوي على صورة وعرضها
                 image_found = False
                 if response.candidates:
                     for candidate in response.candidates:
                         if candidate.content and candidate.content.parts:
                             for part in candidate.content.parts:
-                                # إذا أرجع السيرفر بيانات صورة ثنائية (Bytes)
                                 if part.inline_data:
                                     img_data = part.inline_data.data
                                     image = Image.open(io.BytesIO(img_data))
                                     st.image(image, caption="الصورة الناتجة", use_container_width=True)
                                     image_found = True
                 
-                # إذا أرجع نصاً أو رابطاً بدلاً من ملف الصورة المباشر
                 if not image_found:
                     if response.text:
                         st.write(response.text)
@@ -77,10 +73,10 @@ if submit_button and prompt:
                 else:
                     st.error("⚠️ خادم الفيديو مشغول حالياً، يرجى المحاولة لاحقاً.")
 
-            # 3. مسار توليد النصوص
+            # 3. مسار توليد النصوص بالمنظومة الحديثة المقترحة من جوجل
             elif mode == "✍️ مساعد نصوص (Gemini Flash)":
                 response = client.models.generate_content(
-                    model='gemini-2.5-flash',
+                    model='gemini-3.8-flash',
                     contents=prompt,
                 )
                 st.write(response.text)
