@@ -34,40 +34,35 @@ with st.sidebar:
     prompt = st.text_area("اكتب الوصف (Prompt):", placeholder="اكتب وصفاً واضحاً باللغة الإنجليزية...")
     submit_button = st.button("توليد الآن ✨")
 
-# منطقه العرض الرئيسية
+# منطقة العرض الرئيسية
 st.subheader("🖼️ معرض النتائج")
 
 if submit_button and prompt:
     with st.spinner("جاري المعالجة والتوليد، يرجى الانتظار..."):
         try:
-            # 1. مسار توليد الصور المتوافق مجاناً باستخدام النموذج الأحدث مجاناً لعام 2026
+            # 1. مسار توليد الصور الفوري المباشر للحسابات المجانية
             if mode == "📸 توليد صور (Imagen 3)":
-                response = client.models.generate_content(
-                    model='gemini-3.8-flash',
-                    contents=f"Generate a beautiful image based on this description: {prompt}",
-                )
-                
-                image_found = False
-                if response.candidates:
-                    for candidate in response.candidates:
-                        if candidate.content and candidate.content.parts:
-                            for part in candidate.content.parts:
-                                if part.inline_data:
-                                    img_data = part.inline_data.data
-                                    image = Image.open(io.BytesIO(img_data))
-                                    st.image(image, caption="الصورة الناتجة", use_container_width=True)
-                                    image_found = True
-                
-                if not image_found:
-                    if response.text:
-                        st.write(response.text)
-                    else:
-                        st.error("⚠️ لم نتمكن من جلب الصورة، يرجى إعادة المحاولة بوصف آخر بالإنجليزية.")
+                # استخدام رابط توليد فوري مجاني وسريع ومخصص للصور فقط لمنع ظهور النصوص
+                IMAGE_API_URL = f"https://pollinations.ai{requests.utils.quote(prompt)}?width=1024&height=1024&seed=42"
+                response = requests.get(IMAGE_API_URL)
+                if response.status_code == 200:
+                    image = Image.open(io.BytesIO(response.content))
+                    st.image(image, caption="الصورة التي تم توليدها بنجاح 🚀", use_container_width=True)
+                    
+                    # زر تحميل الصورة مباشرة للهاتف
+                    st.download_button(
+                        label="⬇️ تحميل هذه الصورة إلى هاتفك",
+                        data=response.content,
+                        file_name="generated_image.jpg",
+                        mime="image/jpeg"
+                    )
+                else:
+                    st.error("⚠️ خادم الصور مشغول حالياً، يرجى إعادة المحاولة.")
 
             # 2. مسار توليد الفيديو
             elif mode == "🎬 توليد فيديو سريع":
-                API_URL = "https://huggingface.co"
-                response = requests.post(API_URL, json={"inputs": prompt}, timeout=60)
+                VIDEO_API_URL = "https://huggingface.co"
+                response = requests.post(VIDEO_API_URL, json={"inputs": prompt}, timeout=60)
                 if response.status_code == 200:
                     st.video(response.content)
                 else:
