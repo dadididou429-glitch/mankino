@@ -15,7 +15,6 @@ st.caption("منصتك الخاصة لتوليد النصوص، الصور، و�
 if "GOOGLE_API_KEY" in st.secrets:
     try:
         api_key = st.secrets["GOOGLE_API_KEY"]
-        # إنشاء العميل الجديد المعتمد من جوجل
         client = genai.Client(api_key=api_key)
     except Exception as e:
         st.error(f"❌ فشل في إعداد مكتبة جوجل: {e}")
@@ -41,23 +40,33 @@ st.subheader("🖼️ معرض النتائج")
 if submit_button and prompt:
     with st.spinner("جاري المعالجة والتوليد، يرجى الانتظار..."):
         try:
-            # 1. مسار توليد الصور الحديث المعتمد من جوجل
+            # 1. مسار توليد الصور المتوافق مجاناً مع حسابات المطورين العادية
             if mode == "📸 توليد صور (Imagen 3)":
-                result = client.models.generate_images(
-                    model='imagen-3.0-generate-002',
-                    prompt=prompt,
-                    config=types.GenerateImagesConfig(
-                        number_of_images=1,
-                        output_mime_type="image/jpeg"
-                    )
+                # نطلب من جيميناي تشغيل أداة توليد الصور المدمجة المتاحة مجاناً للحسابات العادية
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=f"Generate an image based on this description: {prompt}",
                 )
                 
-                if result and result.generated_images:
-                    for generated_image in result.generated_images:
-                        image = Image.open(io.BytesIO(generated_image.image.image_bytes))
-                        st.image(image, caption="الصورة الناتجة", use_container_width=True)
-                else:
-                    st.error("⚠️ لم تقم جوجل بإرجاع أي صورة، جرب تغيير الوصف.")
+                # فحص ما إذا كانت الإجابة تحتوي على صورة وعرضها
+                image_found = False
+                if response.candidates:
+                    for candidate in response.candidates:
+                        if candidate.content and candidate.content.parts:
+                            for part in candidate.content.parts:
+                                # إذا أرجع السيرفر بيانات صورة ثنائية (Bytes)
+                                if part.inline_data:
+                                    img_data = part.inline_data.data
+                                    image = Image.open(io.BytesIO(img_data))
+                                    st.image(image, caption="الصورة الناتجة", use_container_width=True)
+                                    image_found = True
+                
+                # إذا أرجع نصاً أو رابطاً بدلاً من ملف الصورة المباشر
+                if not image_found:
+                    if response.text:
+                        st.write(response.text)
+                    else:
+                        st.error("⚠️ لم نتمكن من جلب الصورة، يرجى إعادة المحاولة بوصف آخر بالإنجليزية.")
 
             # 2. مسار توليد الفيديو
             elif mode == "🎬 توليد فيديو سريع":
@@ -68,7 +77,7 @@ if submit_button and prompt:
                 else:
                     st.error("⚠️ خادم الفيديو مشغول حالياً، يرجى المحاولة لاحقاً.")
 
-            # 3. مسار توليد النصوص بالمنظومة الجديدة
+            # 3. مسار توليد النصوص
             elif mode == "✍️ مساعد نصوص (Gemini Flash)":
                 response = client.models.generate_content(
                     model='gemini-2.5-flash',
