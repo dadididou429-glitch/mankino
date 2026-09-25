@@ -1,8 +1,10 @@
 import streamlit as st
 from google import genai
-import requests
+from google.genai import types
+from PIL import Image
+import io
 
-# 1. إعداد واجهة الصفحة الاحترافية وتفعيل المظهر الداكن
+# 1. إعداد واجهة الصفحة بالمظهر الداكن الفخم
 st.set_page_config(page_title="Custom AI Studio Flow", layout="wide")
 
 st.markdown("""
@@ -15,9 +17,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🎨 استوديو الذكاء الاصطناعي الخاص بي")
-st.caption("النسخة المستقرة والسريعة لتفادي ضغط الخوادم")
+st.caption("النسخة الرسمية المستقرة والمباشرة عبر خوادم Google المعتمدة")
 
-# 2. التحقق من وجود مفتاح الربط
+# 2. التحقق من وجود مفتاح الربط الآمن
 if "GOOGLE_API_KEY" in st.secrets:
     try:
         api_key = st.secrets["GOOGLE_API_KEY"]
@@ -39,41 +41,39 @@ with st.sidebar:
     prompt = st.text_area("اكتب الوصف هنا:", placeholder="يمكنك الكتابة بالعربية أو الإنجليزية...")
     submit_button = st.button("بدء التوليد الفوري ✨")
 
-# 4. شاشة عرض النتائج
+# 4. شاشة النتائج
 st.subheader("🖼️ شاشة النتائج")
 
 if submit_button and prompt:
-    with st.spinner("جاري التوليد الفوري..."):
+    with st.spinner("جاري المعالجة الفورية عبر خوادم جوجل..."):
         try:
-            # ترجمة النص تلقائياً عبر نموذج جوجل المستقر والسريع لمنع الأخطاء
-            try:
-                translation = client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=f"Translate this prompt into a clean English description for image generation, output only the translation: {prompt}",
-                )
-                english_prompt = translation.text.strip() if translation.text else prompt
-            except Exception:
-                english_prompt = prompt
-
-            # --- مسار توليد الصور المستقر والمصلح بالكامل ---
+            # --- مسار توليد الصور الرسمي والمستقر من جوجل بدون روابط خارجية ---
             if mode == "📸 توليد صور احترافية (Imagen 3)":
-                # تم تصحيح الرابط هنا بإضافة الشرطة المائلة بدقة قبل النص المترجم
-                encoded_prompt = requests.utils.quote(english_prompt)
-                IMAGE_URL = f"https://pollinations.ai{encoded_prompt}?width=1024&height=1024&nologo=true"
-                
-                response = requests.get(IMAGE_URL, timeout=30)
-                if response.status_code == 200:
-                    st.image(response.content, caption="تم التوليد بنجاح! 🚀", use_container_width=True)
-                    
-                    # زر حفظ الصورة للهاتف
-                    st.download_button(
-                        label="⬇️ حفظ الصورة في ملفات هاتفك",
-                        data=response.content,
-                        file_name="ai_image.jpg",
-                        mime="image/jpeg"
+                # استدعاء نموذج الصور الرسمي المباشر من جوجل والمربوط بمفتاحك
+                result = client.models.generate_images(
+                    model='imagen-3.0-generate-002',
+                    prompt=prompt,
+                    config=types.GenerateImagesConfig(
+                        number_of_images=1,
+                        output_mime_type="image/jpeg",
+                        aspect_ratio="1:1"
                     )
+                )
+                
+                if result and result.generated_images:
+                    for generated_image in result.generated_images:
+                        image = Image.open(io.BytesIO(generated_image.image.image_bytes))
+                        st.image(image, caption="تم التوليد بنجاح بواسطة سيرفر جوجل المباشر! 🚀", use_container_width=True)
+                        
+                        # زر الحفظ المباشر للهاتف
+                        st.download_button(
+                            label="⬇️ حفظ الصورة في ملفات هاتفك",
+                            data=generated_image.image.image_bytes,
+                            file_name="google_ai_image.jpg",
+                            mime="image/jpeg"
+                        )
                 else:
-                    st.error("⚠️ الخادم مشغول حالياً، يرجى المحاولة مرة أخرى.")
+                    st.error("⚠️ لم تقم خوادم جوجل بإرجاع الصورة، يرجى المحاولة مرة أخرى بوصف مختلف.")
 
             # --- مسار مساعد النصوص المستقر ---
             elif mode == "✍️ مساعد ذكي للنصوص والأوامر":
@@ -88,4 +88,4 @@ if submit_button and prompt:
                     st.error("⚠️ لم يتم استلام استجابة، يرجى المحاولة مجدداً.")
 
         except Exception as e:
-            st.error(f"❌ حدث خطأ: {e}")
+            st.error(f"❌ حدث خطأ داخلي من السيرفر: {e}")
