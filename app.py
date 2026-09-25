@@ -1,9 +1,8 @@
 import streamlit as st
 from google import genai
 import requests
-import io
 
-# 1. Configuration de la page
+# 1. إعداد الصفحة وتصميمها
 st.set_page_config(page_title="Custom AI Studio Flow", layout="wide")
 
 st.markdown("""
@@ -18,7 +17,7 @@ st.markdown("""
 st.title("🎨 استوديو الذكاء الاصطناعي الخاص بي")
 st.caption("منصتك الخاصة لتوليد النصوص، الصور، والفيديوهات مجاناً بالكامل")
 
-# 2. Connexion à l'API Google Secrets
+# 2. ربط حساب جوجل بأمان
 if "GOOGLE_API_KEY" in st.secrets:
     try:
         api_key = st.secrets["GOOGLE_API_KEY"]
@@ -30,7 +29,7 @@ else:
     st.warning("⚠️ مفتاح GOOGLE_API_KEY غير موجود في إعدادات Secrets.")
     st.stop()
 
-# 3. Panneau de contrôle latéral
+# 3. لوحة التحكم الجانبية
 with st.sidebar:
     st.header("🎛️ لوحة التحكم")
     mode = st.selectbox("ماذا تريد أن تصنع اليوم؟", [
@@ -38,25 +37,33 @@ with st.sidebar:
         "🎬 توليد فيديو سريع", 
         "✍️ مساعد نصوص (Gemini Flash)"
     ])
-    prompt = st.text_area("اكتب الوصف (Prompt):", placeholder="اكتب وصفك هنا بالإنجليزية للحصول على أفضل النتائج...")
+    prompt = st.text_area("اكتب الوصف (Prompt):", placeholder="اكتب وصفك هنا بالعربية أو الإنجليزية...")
     submit_button = st.button("توليد الآن ✨")
 
-# 4. Zone d'affichage des résultats
+# 4. منطقة العرض الرئيسية
 st.subheader("🖼️ معرض النتائج")
 
 if submit_button and prompt:
     with st.spinner("جاري المعالجة والتوليد، يرجى الانتظار..."):
         try:
-            # --- CAS 1 : GÉNÉRATION D'IMAGE (Lien corrigé sans erreur !) ---
+            # الترجمة التلقائية إلى الإنجليزية لتفادي مشكلة الروابط الطويلة وحروف العربي
+            try:
+                translation_response = client.models.generate_content(
+                    model='gemini-3.8-flash',
+                    contents=f"Translate this prompt into a clean, concise English description for image generation, without any extra text or conversational remarks: {prompt}",
+                )
+                english_prompt = translation_response.text.strip() if translation_response.text else prompt
+            except Exception:
+                english_prompt = prompt  # إذا فشل سيرفر جوجل استخدم النص الأصلي
+
+            # --- مسار توليد الصور المحمي والمترجم تلقائياً ---
             if mode == "📸 توليد صور (Imagen 3)":
-                # Correction du lien officiel ici : .ai au lieu de .aia
-                IMAGE_API_URL = f"https://pollinations.ai{requests.utils.quote(prompt)}?width=1024&height=1024&nologo=true"
+                IMAGE_API_URL = f"https://pollinations.ai{requests.utils.quote(english_prompt)}?width=1024&height=1024&nologo=true"
                 response = requests.get(IMAGE_API_URL, timeout=30)
                 
                 if response.status_code == 200:
                     st.image(response.content, caption="تم توليد صورتك بنجاح! 🚀", use_container_width=True)
                     
-                    # Bouton de téléchargement
                     st.download_button(
                         label="⬇️ تحميل الصورة إلى هاتفك",
                         data=response.content,
@@ -66,16 +73,16 @@ if submit_button and prompt:
                 else:
                     st.error("⚠️ خادم الصور مشغول حالياً، يرجى إعادة الضغط على زر التوليد.")
 
-            # --- CAS 2 : GÉNÉRATION DE VIDÉO ---
+            # --- مسار توليد الفيديو ---
             elif mode == "🎬 توليد فيديو سريع":
                 VIDEO_API_URL = "https://huggingface.co"
-                response = requests.post(VIDEO_API_URL, json={"inputs": prompt}, timeout=60)
+                response = requests.post(VIDEO_API_URL, json={"inputs": english_prompt}, timeout=60)
                 if response.status_code == 200:
                     st.video(response.content)
                 else:
                     st.error("⚠️ خادم الفيديو مشغول حالياً، يرجى المحاولة لاحقاً.")
 
-            # --- CAS 3 : ASSISTANT TEXTE (Gemini) ---
+            # --- مسار مساعد النصوص ---
             elif mode == "✍️ مساعد نصوص (Gemini Flash)":
                 response = client.models.generate_content(
                     model='gemini-3.8-flash',
