@@ -1,8 +1,7 @@
 import streamlit as st
 from google import genai
-import requests
 
-# 1. إعداد واجهة الصفحة وتفعيل المظهر الداكن الفخم
+# إعداد واجهة الصفحة بالمظهر الداكن
 st.set_page_config(page_title="Custom AI Studio Flow", layout="wide")
 
 st.markdown("""
@@ -15,9 +14,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🎨 استوديو الذكاء الاصطناعي الخاص بي")
-st.caption("النسخة الرسمية المستقرة والمجانية بالكامل لعام 2026")
+st.caption("نسخة مستقرة ونظيفة 100% للنصوص والأوامر عبر خوادم Google المعتمدة")
 
-# 2. التحقق من وجود مفتاح جوجل في الإعدادات لتشغيل النصوص
+# التحقق من وجود مفتاح الربط الآمن
 if "GOOGLE_API_KEY" in st.secrets:
     try:
         api_key = st.secrets["GOOGLE_API_KEY"]
@@ -29,63 +28,27 @@ else:
     st.warning("⚠️ يرجى التأكد من إضافة GOOGLE_API_KEY في إعدادات Secrets.")
     st.stop()
 
-# 3. لوحة التحكم الجانبية
+# لوحة التحكم الجانبية
 with st.sidebar:
     st.header("🎛️ لوحة التحكم")
-    mode = st.selectbox("اختر نوع الإبداع اليوم:", [
-        "📸 توليد صور احترافية (Imagen 3)", 
-        "✍️ مساعد ذكي للنصوص والأوامر"
-    ])
-    prompt = st.text_area("اكتب الوصف هنا:", placeholder="يمكنك الكتابة بالعربية أو الإنجليزية...")
-    submit_button = st.button("بدء التوليد الفوري ✨")
+    prompt = st.text_area("اكتب سؤالك أو أمرك للذكاء الاصطناعي هنا:", placeholder="اكتب أي شيء بالعربية أو الإنجليزية...")
+    submit_button = st.button("إرسال الأمر الآن ✨")
 
-# 4. شاشة عرض النتائج
+# شاشة النتائج
 st.subheader("🖼️ شاشة النتائج")
 
 if submit_button and prompt:
-    with st.spinner("جاري التوليد الفوري..."):
+    with st.spinner("جاري المعالجة الفورية عبر خوادم جوجل..."):
         try:
-            # استخدام ذكاء جوجل لترجمة النص في الخلفية لضمان دقة الصورة وحل مشاكل الحروف العربية
-            try:
-                translation = client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=f"Translate this prompt into a clean English description for image generation, output ONLY the translated text: {prompt}",
-                )
-                english_prompt = translation.text.strip() if translation.text else prompt
-            except Exception:
-                english_prompt = prompt
-
-            # --- مسار توليد الصور المجاني المستقر بنسبة 100% ---
-            if mode == "📸 توليد صور احترافية (Imagen 3)":
-                # استخدام محرك رسوم فوري ومفتوح لتفادي قيود جوجل المدفوعة
-                cleaned_prompt = english_prompt.replace(" ", "-")
-                IMAGE_URL = f"https://pollinations.ai{cleaned_prompt}?width=1024&height=1024&nologo=true"
-                
-                response = requests.get(IMAGE_URL, timeout=30)
-                if response.status_code == 200:
-                    st.image(response.content, caption="تم التوليد بنجاح! 🚀", use_container_width=True)
-                    
-                    # زر حفظ الصورة مباشرة في الهاتف
-                    st.download_button(
-                        label="⬇️ حفظ الصورة في ملفات هاتفك",
-                        data=response.content,
-                        file_name="ai_image.jpg",
-                        mime="image/jpeg"
-                    )
-                else:
-                    st.error("⚠️ الخادم مشغول حالياً، يرجى إعادة المحاولة.")
-
-            # --- مسار مساعد النصوص المستقر والمجاني من جوجل ---
-            elif mode == "✍️ مساعد ذكي للنصوص والأوامر":
-                response = client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=prompt,
-                )
-                if response.text:
-                    st.success("✅ تم توليد النص بنجاح:")
-                    st.write(response.text)
-                else:
-                    st.error("⚠️ لم يتم استلام استجابة، يرجى المحاولة مجدداً.")
-
+            # استدعاء نموذج جيميناي السريع والمستقر مجاناً بدون قيود
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+            )
+            if response.text:
+                st.success("✅ تم توليد الرد بنجاح:")
+                st.write(response.text)
+            else:
+                st.error("⚠️ لم يتم استلام استجابة، يرجى المحاولة مجدداً.")
         except Exception as e:
-            st.error(f"❌ حدث خطأ: {e}")
+            st.error(f"❌ حدث خطأ داخلي من السيرفر: {e}")
