@@ -3,13 +3,13 @@ import google.generativeai as genai
 from PIL import Image
 import requests
 
-# إعداد الصفحة وتصميمها بشكل متناسق ومريح للهواتف
+# إعداد الصفحة وتصميمها
 st.set_page_config(page_title="Custom AI Studio Flow", layout="wide")
 
 st.title("🎨 استوديو الذكاء الاصطناعي المتكامل")
 st.caption("منصتك الخاصة لتوليد النصوص، الصور، والفيديوهات مجاناً بالكامل")
 
-# التحقق الآمن من وجود مفتاح جوجل في الإعدادات
+# قراءة مفتاح جوجل مباشرة بدون قيود على الحروف الأولى
 if "GOOGLE_API_KEY" in st.secrets:
     try:
         api_key = st.secrets["GOOGLE_API_KEY"]
@@ -19,10 +19,9 @@ if "GOOGLE_API_KEY" in st.secrets:
         st.stop()
 else:
     st.warning("⚠️ لم يتم العثور على GOOGLE_API_KEY. يرجى إضافته في قسم Secrets في لوحة تحكم Streamlit.")
-    st.info("تأكد من كتابة الاسم بالحروف الكبيرة تماماً: GOOGLE_API_KEY")
     st.stop()
 
-# لوحة التحكم الجانبية (تم تحسين الأزرار لتعمل بسلاسة)
+# لوحة التحكم الجانبية
 with st.sidebar:
     st.header("🎛️ لوحة التحكم")
     mode = st.selectbox("ماذا تريد أن تصنع اليوم؟", [
@@ -39,7 +38,7 @@ st.subheader("🖼️ معرض النتائج")
 if submit_button and prompt:
     with st.spinner("جاري المعالجة والتوليد، يرجى الانتظار..."):
         try:
-            # 1. مسار توليد الصور (باستخدام الكود المعتمد المحدث)
+            # 1. مسار توليد الصور 
             if mode == "📸 توليد صور (Imagen 3)":
                 model = genai.ImageGenerationModel("imagen-3.0-generate-002")
                 result = model.generate_images(prompt=prompt, number_of_images=1)
@@ -57,7 +56,7 @@ if submit_button and prompt:
                 if response.status_code == 200:
                     st.video(response.content)
                 else:
-                    st.error(f"⚠️ خادم الفيديو مشغول أو لم يستجب (كود الخطأ: {response.status_code}). جرب وصفاً آخر.")
+                    st.error(f"⚠️ خادم الفيديو مشغول حالياً. كود الخطأ: {response.status_code}")
 
             # 3. مسار توليد النصوص
             elif mode == "✍️ مساعد نصوص (Gemini Flash)":
@@ -67,4 +66,3 @@ if submit_button and prompt:
 
         except Exception as e:
             st.error(f"❌ حدث خطأ أثناء التوليد: {e}")
-            st.info("إذا كان الخطأ يتعلق بالـ API Key، يرجى التأكد من صلاحية المفتاح الذي جلبته من Google AI Studio.")
